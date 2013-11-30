@@ -3,7 +3,61 @@ from bs4 import BeautifulSoup
 import mechanize
 import json
 import codecs
+import unicodedata
 import os
+
+
+def normalizeTime(raw_time):
+    words = {5: "N", 10: "A", 11: "B", 12: "C", 13: "D"}
+    times = {"N": 5, "A": 10, "B": 11, "C": 12, "D": 13}
+    if not raw_time:
+        return ""
+
+    if raw_time.rfind("[") > 0:
+        raw_time = raw_time.split("[")
+        tmp_time = ["", "", ""]
+        for j in range(1, 3):
+            if raw_time[j].find("~") >= 0:
+                p = raw_time[j].find("~")
+                if raw_time[j][p - 1] in words.values():
+                    start = times[raw_time[p - 1]]
+                else:
+                    start = int(raw_time[j][p - 1])
+                if raw_time[j][p + 1] in words.values():
+                    end = times[raw_time[p + 1]] + 1
+                else:
+                    end = int(raw_time[j][p + 1]) + 1
+                for k in range(start, end):
+                    if k >= 10:
+                        tmp_time[j] += words[k]
+                    else:
+                        tmp_time[j] += str(k)
+                tmp_time[j] = raw_time[j][0] + tmp_time[j]
+            else:
+                tmp_time[j] = raw_time[j][0] + raw_time[j][2:]
+        return "%s,%s" % (tmp_time[1], tmp_time[2])
+    else:
+        p = raw_time.find("~")
+        if p >= 0:
+            tmp_time = ""
+            if raw_time[p - 1] in words.values():
+                start = times[raw_time[p - 1]]
+            else:
+                start = int(raw_time[p - 1])
+            if raw_time[p + 1] in words.values():
+                end = times[raw_time[p + 1]] + 1
+            else:
+                end = int(raw_time[p + 1]) + 1
+            for k in range(start, end):
+                if k >= 10:
+                    tmp_time += words[k]
+                else:
+                    tmp_time += str(k)
+            tmp_time = raw_time[1] + tmp_time
+        else:
+            tmp_time = raw_time[1] + raw_time[3:]
+
+        return tmp_time
 
 
 def logToJson(result):
@@ -11,6 +65,15 @@ def logToJson(result):
     for r in result:
         for i in range(len(r)):
             raw_data[t[i]] = r[i].text
+
+        raw_data["code"] = "%s-%s %s" % (raw_data["dept_code"], raw_data["serial"], raw_data["code"])
+
+        raw_time = unicodedata.normalize("NFD", raw_data["time"]).encode("ascii", "ignore")
+        if raw_data["code"] == "I2-156 I231420":
+            raw_data["time"] = "31234N5678"
+            continue
+        print("hello ", raw_data["code"])
+        raw_data["time"] = normalizeTime(raw_time)
 
         if os.path.exists("ncku.json"):
             formatFile = open("ncku.json", "r")
@@ -27,7 +90,7 @@ def logToJson(result):
 
         json_data = json.dumps(raw_data, ensure_ascii=False)
         f = codecs.open("ncku.json", "a", encoding='utf-8')
-        f.write("%s,\n" % (json_data))
+        f.write("%s, ]" % (json_data))
         f.close()
 
 

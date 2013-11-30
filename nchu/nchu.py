@@ -11,6 +11,8 @@ def logToJson(result):
     for r in result:
         for i in range(len(r)):
             raw_data[t[i]] = r[i].text
+        raw_data["time"] += raw_data["prac_time"]
+        raw_data["grade"] = raw_data["code"][0]
 
         if os.path.exists("nchu.json"):
             formatFile = open("nchu.json", "r")
