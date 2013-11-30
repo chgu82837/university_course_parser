@@ -3,7 +3,32 @@ from bs4 import BeautifulSoup
 import mechanize
 import json
 import codecs
+import os
 
+
+def logToJson(result):
+    raw_data = {}
+    for r in result:
+        for i in range(len(r)):
+            raw_data[t[i]] = r[i].text
+
+        if os.path.exists("ncku.json"):
+            formatFile = open("ncku.json", "r")
+            raw = formatFile.read()
+            formatFile.close()
+
+            formatFile = open("ncku.json", "w")
+            if raw[0] != "[":
+                raw = "[" + raw
+            if raw[-1] == "]":
+                raw = raw[:-1]
+            formatFile.write(raw)
+            formatFile.close()
+
+        json_data = json.dumps(raw_data, ensure_ascii=False)
+        f = codecs.open("ncku.json", "a", encoding='utf-8')
+        f.write("%s,\n" % (json_data))
+        f.close()
 
 
 d = ["A2", "A3", "A4", "A5", "A6", "AA", "AH", "AN", "C0", "XZ", "A1",
@@ -46,14 +71,4 @@ for dept in d:
             p = 21 * i
             result.append(td[p:p + 21])
 
-    raw_data = {}
-    for r in result:
-        for i in range(len(r)):
-            raw_data[t[i]] = r[i].text
-
-        json_data = json.dumps(raw_data, indent=4,
-                               separators=(',', ': '),
-                               ensure_ascii=False)
-        f = codecs.open("ncku.json", "a", encoding='utf-8')
-        f.write("%s,\n" % (json_data))
-        f.close()
+    logToJson(result)

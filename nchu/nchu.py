@@ -3,8 +3,33 @@ from bs4 import BeautifulSoup
 import mechanize
 import json
 import codecs
+import os
 
-url = "https://onepiece.nchu.edu.tw/cofsys/plsql/crseqry_home"
+
+def logToJson(result):
+    raw_data = {}
+    for r in result:
+        for i in range(len(r)):
+            raw_data[t[i]] = r[i].text
+
+        if os.path.exists("nchu.json"):
+            formatFile = open("nchu.json", "r")
+            raw = formatFile.read()
+            formatFile.close()
+
+            formatFile = open("nchu.json", "w")
+            if raw[0] != "[":
+                raw = "[" + raw
+            if raw[-1] == "]":
+                raw = raw[:-1]
+            formatFile.write(raw)
+            formatFile.close()
+
+        json_data = json.dumps(raw_data, ensure_ascii=False)
+        f = codecs.open("nchu.json", "a", encoding='utf-8')
+        f.write("%s, ]" % (json_data))
+        f.close()
+
 
 v = {"year":  0, "career": 1, "dept":  2,
      "level": 3, "text":   4, "teach": 5,
@@ -16,6 +41,7 @@ t = ["obligatory", "code", "title", "previous", "year", "credits",
      "number_outter_dept", "number_available", "number_waiting",
      "language", "note"]
 
+url = "https://onepiece.nchu.edu.tw/cofsys/plsql/crseqry_home"
 br = mechanize.Browser()
 br.open(url)
 
@@ -42,13 +68,4 @@ for deptCode in depts.keys():
             p = 20 * i
             result.append(td[p + 1:p + 21])
 
-    raw_data = {}
-    for r in result:
-        for i in range(len(r)):
-            raw_data[t[i]] = r[i].text
-        json_data = json.dumps(raw_data, indent=4,
-                               separators=(',', ': '),
-                               ensure_ascii=False)
-        f = codecs.open("nchu.json", "a", encoding='utf-8')
-        f.write("%s,\n" % (json_data))
-        f.close()
+    logToJson(result)
