@@ -13,6 +13,7 @@ def normalizeTime(raw_time):
     if not raw_time:
         return ""
 
+    N = ""
     if raw_time.rfind("[") > 0:
         raw_time = raw_time.split("[")
         tmp_time = ["", "", ""]
@@ -20,6 +21,8 @@ def normalizeTime(raw_time):
             if raw_time[j].find("~") >= 0:
                 p = raw_time[j].find("~")
                 if raw_time[j][p - 1] in words.values():
+                    if raw_time[j][p - 1] == "N":
+                        N = "N"
                     start = times[raw_time[p - 1]]
                 else:
                     start = int(raw_time[j][p - 1])
@@ -32,7 +35,7 @@ def normalizeTime(raw_time):
                         tmp_time[j] += words[k]
                     else:
                         tmp_time[j] += str(k)
-                tmp_time[j] = raw_time[j][0] + tmp_time[j]
+                tmp_time[j] = raw_time[j][0] + N + tmp_time[j]
             else:
                 tmp_time[j] = raw_time[j][0] + raw_time[j][2:]
         return "%s,%s" % (tmp_time[1], tmp_time[2])
@@ -41,6 +44,8 @@ def normalizeTime(raw_time):
         if p >= 0:
             tmp_time = ""
             if raw_time[p - 1] in words.values():
+                if raw_time[p - 1] == "N":
+                    N = "N"
                 start = times[raw_time[p - 1]]
             else:
                 start = int(raw_time[p - 1])
@@ -53,7 +58,7 @@ def normalizeTime(raw_time):
                     tmp_time += words[k]
                 else:
                     tmp_time += str(k)
-            tmp_time = raw_time[1] + tmp_time
+            tmp_time = raw_time[1] + N + tmp_time
         else:
             tmp_time = raw_time[1] + raw_time[3:]
 
@@ -72,7 +77,6 @@ def logToJson(result):
         if raw_data["code"] == "I2-156 I231420":
             raw_data["time"] = "31234N5678"
             continue
-        print("hello ", raw_data["code"])
         raw_data["time"] = normalizeTime(raw_time)
 
         if os.path.exists("ncku.json"):
