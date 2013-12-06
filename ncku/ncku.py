@@ -69,7 +69,7 @@ def logToJson(result):
     raw_data = {}
     for r in result:
         for i in range(len(r)):
-            raw_data[t[i]] = r[i].text
+            raw_data[t[i]] = r[i].text.replace(" ", "")
 
         raw_data["code"] = "%s-%s %s" % (raw_data["dept_code"], raw_data["serial"], raw_data["code"])
 
@@ -79,6 +79,16 @@ def logToJson(result):
             continue
         raw_data["time"] = normalizeTime(raw_time)
 
+        del raw_data["dept_code"]
+        del raw_data["serial"]
+        del raw_data["class_code"]
+        del raw_data["field"]
+        del raw_data["number_selected"]
+        del raw_data["crossfield"]
+        del raw_data["property"]
+        del raw_data["experts"]
+
+        """
         if os.path.exists("ncku.json"):
             formatFile = open("ncku.json", "r")
             raw = formatFile.read()
@@ -91,10 +101,11 @@ def logToJson(result):
                 raw = raw[:-1]
             formatFile.write(raw)
             formatFile.close()
+        """
 
         json_data = json.dumps(raw_data, ensure_ascii=False)
-        f = codecs.open("ncku.json", "a", encoding='utf-8')
-        f.write("%s, ]" % (json_data))
+        f = codecs.open("ncku_t.json", "a", encoding='utf-8')
+        f.write("%s," % (json_data))
         f.close()
 
 
@@ -116,7 +127,7 @@ d = ["A2", "A3", "A4", "A5", "A6", "AA", "AH", "AN", "C0", "XZ", "A1",
 
 t = ["department", "dept_code", "serial", "code", "class_code",
      "class", "grade", "field", "language", "title", "obligatory",
-     "credits", "professor", "member", "time", "location", "note",
+     "credits", "professor", "number_selected", "time", "location", "note",
      "previous", "experts", "property", "crossfield"]
 
 br = mechanize.Browser()
