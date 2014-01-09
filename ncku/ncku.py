@@ -127,8 +127,8 @@ d = ["A2", "A3", "A4", "A5", "A6", "AA", "AH", "AN", "C0", "XZ", "A1",
 
 t = ["department", "dept_code", "serial", "code", "class_code",
      "class", "grade", "field", "language", "title", "obligatory",
-     "credits", "professor", "number_selected", "time", "location", "note",
-     "previous", "experts", "property", "crossfield"]
+     "credits", "professor", "number_selected", "time", "location",
+     "note", "previous", "experts", "property", "crossfield"]
 
 br = mechanize.Browser()
 
