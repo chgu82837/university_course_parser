@@ -52,8 +52,8 @@ for ID in deptID:
     td = soup.findAll("td")[106:-5]
 
     subjects = []
-    for i in range(int(len(td) / 20)):
-        if i == len(td) / 20:
+    for i in range(len(td) // 20):
+        if i == len(td) // 20:
             subjects.append(td[-20:])
             break
         else:

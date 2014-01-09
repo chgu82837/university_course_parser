@@ -1,10 +1,8 @@
-# -*- coding utf-8 -*-
-from bs4 import BeautifulSoup
-import mechanize
 import json
-import codecs
+import requests
+from bs4 import BeautifulSoup
+
 import unicodedata
-import os
 
 
 def normalizeTime(raw_time):
@@ -88,21 +86,6 @@ def logToJson(result):
         del raw_data["property"]
         del raw_data["experts"]
 
-        """
-        if os.path.exists("ncku.json"):
-            formatFile = open("ncku.json", "r")
-            raw = formatFile.read()
-            formatFile.close()
-
-            formatFile = open("ncku.json", "w")
-            if raw[0] != "[":
-                raw = "[" + raw
-            if raw[-1] == "]":
-                raw = raw[:-1]
-            formatFile.write(raw)
-            formatFile.close()
-        """
-
         json_data = json.dumps(raw_data, ensure_ascii=False)
         f = codecs.open("ncku_t.json", "a", encoding='utf-8')
         f.write("%s," % (json_data))
@@ -130,23 +113,20 @@ t = ["department", "dept_code", "serial", "code", "class_code",
      "credits", "professor", "number_selected", "time", "location",
      "note", "previous", "experts", "property", "crossfield"]
 
-br = mechanize.Browser()
 
 for dept in d:
-    url = "http://course-query.acad.ncku.edu.tw/qry/qry001.php?dept_no=%s" % dept
-    br.open(url)
-
-    html = br.response().get_data()
-    soup = BeautifulSoup(html)
+    url = "http://course-query.acad.ncku.edu.tw/qry/qry001.php?dept_no={0}".format(dept)
+    html = requests.get(url)
+    soup = BeautifulSoup(html.text)
     td = soup.find_all("td")
 
-    result = []
+    subjects = []
     for i in range(len(td) / 21 - 1):
         if i == len(td) / 21 - 1:
-            result.append(td[-21:])
+            subjects.append(td[-21:])
             break
         else:
             p = 21 * i
-            result.append(td[p:p + 21])
+            subjects.append(td[p:p + 21])
 
-    logToJson(result)
+    logToJson(subjects)
