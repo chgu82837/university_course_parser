@@ -2,95 +2,99 @@ import json
 import requests
 from bs4 import BeautifulSoup
 
-import unicodedata
 
-
-def normalizeTime(raw_time):
-    words = {5: "N", 10: "A", 11: "B", 12: "C", 13: "D"}
-    times = {"N": 5, "A": 10, "B": 11, "C": 12, "D": 13}
-    if not raw_time:
+def normalizeTime(raw):
+    try:
+        int(raw)
+        if not(raw):
+            return ""
+    except ValueError:
         return ""
 
+    words = {5: "N", 10: "A", 11: "B", 12: "C", 13: "D"}
+    times = {"N": 5, "A": 10, "B": 11, "C": 12, "D": 13}
+
     N = ""
-    if raw_time.rfind("[") > 0:
-        raw_time = raw_time.split("[")
-        tmp_time = ["", "", ""]
-        for j in range(1, 3):
-            if raw_time[j].find("~") >= 0:
-                p = raw_time[j].find("~")
-                if raw_time[j][p - 1] in words.values():
-                    if raw_time[j][p - 1] == "N":
+    if raw.count("[") > 1:
+        raw = raw.split("[")
+        tmp = ["", "", ""]
+        for i in range(1, 3):
+            if raw[i].find("~") >= 0:
+                p = raw[i].find("~")
+                if raw[i][p - 1] in words.values():
+                    if raw[i][p - 1] == "N":
                         N = "N"
-                    start = times[raw_time[p - 1]]
+                    start = times[raw[p - 1]]
                 else:
-                    start = int(raw_time[j][p - 1])
-                if raw_time[j][p + 1] in words.values():
-                    end = times[raw_time[p + 1]] + 1
+                    start = int(raw[i][p - 1])
+                if raw[i][p + 1] in words.values():
+                    end = times[raw[p + 1]] + 1
                 else:
-                    end = int(raw_time[j][p + 1]) + 1
+                    end = int(raw[i][p + 1]) + 1
                 for k in range(start, end):
                     if k >= 10:
-                        tmp_time[j] += words[k]
+                        tmp[i] += words[k]
                     else:
-                        tmp_time[j] += str(k)
-                tmp_time[j] = raw_time[j][0] + N + tmp_time[j]
+                        tmp[i] += str(k)
+                tmp[i] = raw[i][0] + N + tmp[i]
             else:
-                tmp_time[j] = raw_time[j][0] + raw_time[j][2:]
-        return "%s,%s" % (tmp_time[1], tmp_time[2])
+                tmp[i] = raw[i][0] + raw[i][2:]
+        return "{0},{1}".format(tmp[1], tmp[2])
     else:
-        p = raw_time.find("~")
+        p = raw.find("~")
         if p >= 0:
-            tmp_time = ""
-            if raw_time[p - 1] in words.values():
-                if raw_time[p - 1] == "N":
+            tmp = ""
+            if raw[p - 1] in words.values():
+                if raw[p - 1] == "N":
                     N = "N"
-                start = times[raw_time[p - 1]]
+                start = times[raw[p - 1]]
             else:
-                start = int(raw_time[p - 1])
-            if raw_time[p + 1] in words.values():
-                end = times[raw_time[p + 1]] + 1
+                start = int(raw[p - 1])
+            if raw[p + 1] in words.values():
+                end = times[raw[p + 1]] + 1
             else:
-                end = int(raw_time[p + 1]) + 1
+                end = int(raw[p + 1]) + 1
             for k in range(start, end):
                 if k >= 10:
-                    tmp_time += words[k]
+                    tmp += words[k]
                 else:
-                    tmp_time += str(k)
-            tmp_time = raw_time[1] + N + tmp_time
+                    tmp += str(k)
+            tmp = raw[1] + N + tmp
         else:
-            tmp_time = raw_time[1] + raw_time[3:]
+            tmp = raw[1] + raw[3:]
 
-        return tmp_time
+        return tmp
 
 
-def logToJson(result):
-    raw_data = {}
-    for r in result:
+def logToJson(subjects):
+    data = {}
+    for r in subjects:
+        # Remove spaces
         for i in range(len(r)):
-            raw_data[t[i]] = r[i].text.replace(" ", "")
+            data[t[i]] = r[i].text.replace(" ", "")
 
-        raw_data["code"] = "%s-%s %s" % (raw_data["dept_code"], raw_data["serial"], raw_data["code"])
+        # Normalize particular data
+        data["code"] = "{0}-{1} {2}".format(data["dept_code"], data["serial"], data["code"])
+        data["time"] = normalizeTime(data["time"])
+        if data["code"] == "I2-156 I231420":
+            data["time"] = "31234N5678"
 
-        raw_time = unicodedata.normalize("NFD", raw_data["time"]).encode("ascii", "ignore")
-        if raw_data["code"] == "I2-156 I231420":
-            raw_data["time"] = "31234N5678"
-            continue
-        raw_data["time"] = normalizeTime(raw_time)
+        # Remove useless data
+        useless = ["dept_code", "serial", "class_code",
+                   "field", "number_selected", "crossfield",
+                   "property", "experts"]
+        for item in useless:
+            data.pop(item)
 
-        del raw_data["dept_code"]
-        del raw_data["serial"]
-        del raw_data["class_code"]
-        del raw_data["field"]
-        del raw_data["number_selected"]
-        del raw_data["crossfield"]
-        del raw_data["property"]
-        del raw_data["experts"]
+        json_data = json.dumps(data, ensure_ascii=False)
+        with open("ncku.json", "a") as f:
+            f.write("{0},".format(json_data))
 
-        json_data = json.dumps(raw_data, ensure_ascii=False)
-        f = codecs.open("ncku_t.json", "a", encoding='utf-8')
-        f.write("%s," % (json_data))
-        f.close()
 
+t = ["department", "dept_code", "serial", "code", "class_code",
+     "class", "grade", "field", "language", "title", "obligatory",
+     "credits", "professor", "number_selected", "number_left", "time",
+     "location", "note", "previous", "experts", "property", "crossfield"]
 
 d = ["A2", "A3", "A4", "A5", "A6", "AA", "AH", "AN", "C0", "XZ", "A1",
      "A7", "A8", "A9", "AG", "B1", "K1", "B2", "K2", "B3", "K3", "B5",
@@ -108,25 +112,20 @@ d = ["A2", "A3", "A4", "A5", "A6", "AA", "AH", "AN", "C0", "XZ", "A1",
      "VG", "VH", "VJ", "VK", "E7", "N7", "F2", "P2", "F3", "P3", "PA",
      "C5", "L5", "L6", "L8", "Z0" "Z1", "Z2", "Z3"]
 
-t = ["department", "dept_code", "serial", "code", "class_code",
-     "class", "grade", "field", "language", "title", "obligatory",
-     "credits", "professor", "number_selected", "time", "location",
-     "note", "previous", "experts", "property", "crossfield"]
-
-
 for dept in d:
     url = "http://course-query.acad.ncku.edu.tw/qry/qry001.php?dept_no={0}".format(dept)
     html = requests.get(url)
+    html.encoding = 'utf-8'
     soup = BeautifulSoup(html.text)
     td = soup.find_all("td")
 
     subjects = []
-    for i in range(len(td) / 21 - 1):
-        if i == len(td) / 21 - 1:
-            subjects.append(td[-21:])
+    for i in range(len(td) // 22 - 1):
+        if i == len(td) // 22 - 1:
+            subjects.append(td[-22:])
             break
         else:
-            p = 21 * i
-            subjects.append(td[p:p + 21])
+            p = 22 * i
+            subjects.append(td[p:p + 22])
 
     logToJson(subjects)
