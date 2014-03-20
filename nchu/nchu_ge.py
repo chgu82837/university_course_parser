@@ -2,63 +2,68 @@ import json
 import requests
 from bs4 import BeautifulSoup
 
-def logToJson(subjects):
+def to_json(subjects):
+    items = ['obligatory', 'code', 'title', 'trash1','year', 'credits',
+             'hours', 'trash2','time', 'trash3', 'location', 'trash4', 'professor',
+             'trash5', 'department', 'number', 'number_selected', 'trash6',
+             'number_available', 'language', 'note']
+
     data = {}
+    flag = False
     for sub in subjects:
         for i in range(len(sub)):
-            data[t[i]] = sub[i].text
+            if sub[i].text.strip() == '必選別':
+                flag = True
+                break
+            data[items[i]] = sub[i].text.strip()
+
+        if flag == True:
+            flag = False
+            continue
 
         # Normalize particular data
-        data["time"] += data["prac_time"]
-        data["professor"] += data["prac_professor"]
-        data["location"] += data["prac_location"]
-        data["grade"] = data["code"][0]
+        data['grade'] = data['code'][0]
 
         # Remove useless data
-        useless = ["prac_time", "hours", "prac_hours",
-                    "prac_professor", "prac_location",
-                    "number", "number_selected",
-                    "number_outer_dept", "number_available"]
-
+        useless = ['number_selected', 'number_available',
+                'trash1', 'trash2', 'trash3', 'trash4',
+                'trash5', 'trash6']
         for item in useless:
             data.pop(item)
 
+        print(data)
+
         json_data = json.dumps(data, ensure_ascii=False)
-        with open("nchu.json", "a") as f:
-            f.write("{},".format(json_data))
+        with open('nchu.json', 'a') as f:
+            f.write('{},'.format(json_data))
 
-t = ["obligatory", "code", "title", "previous", "year", "credits",
-     "hours", "prac_hours", "time", "prac_time", "location",
-     "prac_location", "professor", "prac_professor", "department",
-     "number", "number_selected", "number_outer_dept", "number_available",
-     "language", "note"]
 
-url = "https://onepiece.nchu.edu.tw/cofsys/plsql/crseqry_gene"
+def connect():
+    url = 'https://onepiece.nchu.edu.tw/cofsys/plsql/crseqry_gene'
+    html = requests.get(url)
+    soup = BeautifulSoup(html.text)
 
-html = requests.get(url)
-soup = BeautifulSoup(html.text)
+    form = soup.findAll('select', attrs={'name': 'v_group'})
+    regForm = str(form[0]).split('value="')
+    deptID = [name[0:4].strip() for name in regForm[2:]]
 
-form = soup.findAll('form')[2]
-deptName = form.text.split('\n')
-deptID = []
+    for ID in deptID:
+        payload = {'v_group': ID}
+        response = requests.post(url, data=payload)
+        soup = BeautifulSoup(response.text)
+        td = soup.findAll('td')[105:-2]
 
-for text in deptName:
-    if len(text.split(' ')) == 2:
-        deptID.append(text.split(' ')[0])
+        print(ID, len(td) // 20)
+        subjects = []
+        for i in range(len(td) // 21):
+            if i == len(td) // 21:
+                subjects.append(td[-21:])
+                break
+            else:
+                p = 21 * i
+                subjects.append(td[p + 1:p + 22])
 
-for ID in deptID:
-    payload = {"v_dept": ID}
-    response = requests.post(url, data=payload)
-    soup = BeautifulSoup(response.text)
-    td = soup.findAll("td")[105:-5]
+        to_json(subjects)
 
-    subjects = []
-    for i in range(len(td) // 21):
-        if i == len(td) // 21:
-            subjects.append(td[-21:])
-            break
-        else:
-            p = 21 * i
-            subjects.append(td[p + 1:p + 22])
-
-    logToJson(subjects)
+if __name__ == '__main__':
+    connect()
