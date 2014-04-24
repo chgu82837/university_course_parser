@@ -40,6 +40,7 @@ def to_json(subject):
 
     # Normalize particular data
     data['obligatory'] = '必修' if data['obligatory'] == '必' else '選修'
+    data['code'] = '{0}-{1}'.format(data['code'], data['serial'])
     data['time'] = normalize(data['location'])
 
     # Remove useless data
