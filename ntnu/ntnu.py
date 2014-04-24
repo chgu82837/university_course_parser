@@ -1,6 +1,7 @@
 import json
 from xlrd import open_workbook
 
+
 def normalize(raw_time):
     if raw_time == '':
         return ''
@@ -26,6 +27,7 @@ def normalize(raw_time):
             result += to_word[i+1]
 
     return result
+
 
 def to_json(subject):
     items = ['serial', 'code', 'department', 'team', 'grade',
@@ -56,6 +58,13 @@ def to_json(subject):
         f.write('{0},'.format(json_data))
 
 
+def correct_json():
+    with open('ntnu.json', 'r') as f:
+        raw = f.readline()
+    with open('ntnu.json', 'w') as f:
+        f.write('[' + raw[:-1] + ']')
+
+
 def open_excel():
     excel = open_workbook('export.xls')
     table = excel.sheets()[0]
@@ -71,3 +80,4 @@ def open_excel():
 
 if __name__ == '__main__':
     open_excel()
+    correct_json()

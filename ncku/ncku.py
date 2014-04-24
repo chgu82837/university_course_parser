@@ -2,6 +2,7 @@ import json
 import requests
 from bs4 import BeautifulSoup
 
+
 def normalize(raw_time):
     times = raw_time.split('[')[1:]
     for i in range(len(times)):
@@ -31,9 +32,10 @@ def normalize(raw_time):
 
 def to_json(subjects):
     items = ['department', 'dept_code', 'serial', 'code', 'class_code',
-             'class', 'grade', 'field', 'team', 'language', 'title', 'obligatory',
-             'credits', 'professor', 'number_selected', 'number_left', 'time',
-             'location', 'note', 'previous', 'experts', 'property', 'crossfield']
+             'class', 'grade', 'field', 'team', 'language', 'title',
+             'obligatory', 'credits', 'professor', 'number_selected',
+             'number_left', 'time', 'location', 'note', 'previous',
+             'experts', 'property', 'crossfield']
 
     data = {}
     for sub in subjects:
@@ -42,7 +44,8 @@ def to_json(subjects):
             data[items[i]] = sub[i].text.replace(' ', '').strip()
 
         # Normalize particular data
-        data['code'] = '{0}-{1} {2}'.format(data['dept_code'], data['serial'], data['code'])
+        data['code'] = '{0}-{1} {2}'.format(data['dept_code'],
+                                            data['serial'], data['code'])
         data['time'] = normalize(data['time'])
 
         # Remove useless data
@@ -57,6 +60,13 @@ def to_json(subjects):
         json_data = json.dumps(data, ensure_ascii=False)
         with open('ncku.json', 'a') as f:
             f.write('{0},'.format(json_data))
+
+
+def correct_json():
+    with open('ncku.json', 'r') as f:
+        raw = f.readline()
+    with open('ncku.json', 'w') as f:
+        f.write('[' + raw[:-1] + ']')
 
 
 def connect():
@@ -77,7 +87,8 @@ def connect():
              'C5', 'L5', 'L6', 'L8', 'Z0' 'Z1', 'Z2', 'Z3']
 
     for dept in depts:
-        url = 'http://course-query.acad.ncku.edu.tw/qry/qry001.php?dept_no={0}'.format(dept)
+        domain = 'http://course-query.acad.ncku.edu.tw/'
+        url = domain + 'qry/qry001.php?dept_no=' + dept
         html = requests.get(url)
         html.encoding = 'utf-8'
         soup = BeautifulSoup(html.text)
@@ -97,3 +108,4 @@ def connect():
 
 if __name__ == '__main__':
     connect()
+    correct_json()
