@@ -1,5 +1,4 @@
-import nchu_dept
-import nchu_ge
+from nchu import dept, general
 
 
 def correct_json():
@@ -8,7 +7,12 @@ def correct_json():
     with open('nchu.json', 'w') as f:
         f.write('[' + raw[:-1] + ']')
 
+
+def connect(year, debug=False):
+    dept.connect(debug)
+    general.connect(debug)
+
+
 if __name__ == '__main__':
-    nchu_dept.connect()
-    nchu_ge.connect()
+    connect('1022', debug=True)
     correct_json()

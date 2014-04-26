@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def to_json(subjects):
+def to_json(subjects, debug=False):
     items = ['obligatory', 'code', 'title', 'previous', 'year', 'credits',
              'hours', 'prac_hours', 'time', 'prac_time', 'location',
              'prac_location', 'professor', 'prac_professor', 'department',
@@ -36,7 +36,8 @@ def to_json(subjects):
         for item in useless:
             data.pop(item)
 
-        print(data)
+        if debug is True:
+            print(data)
 
         json_data = json.dumps(data, ensure_ascii=False)
         with open('nchu.json', 'a') as f:
@@ -50,7 +51,7 @@ def correct_json():
         f.write('[' + raw[:-1] + ']')
 
 
-def connect():
+def connect(debug=False):
     url = 'https://onepiece.nchu.edu.tw/cofsys/plsql/crseqry_home'
     html = requests.get(url)
     soup = BeautifulSoup(html.text)
@@ -65,8 +66,11 @@ def connect():
         soup = BeautifulSoup(response.text)
         td = soup.findAll('td')[106:-5]
 
+        if debug is True:
+            # Print the length of courses
+            print(ID, len(td) // 20)
+
         subjects = []
-        print(ID, len(td) // 20)
         for i in range(len(td) // 20):
             if i == len(td) // 20:
                 subjects.append(td[-20:])
@@ -75,8 +79,8 @@ def connect():
                 p = 20 * i
                 subjects.append(td[p + 1:p + 21])
 
-        to_json(subjects)
+        to_json(subjects, debug)
 
 if __name__ == '__main__':
-    connect()
+    connect(debug=True)
     correct_json()

@@ -29,7 +29,7 @@ def normalize(raw_time):
     return result
 
 
-def to_json(subject):
+def to_json(subject, debug=False):
     items = ['serial', 'code', 'department', 'team', 'grade',
              'class', 'language', 'moocs', 'sex', 'title',
              'eng_title', 'credits', 'obligatory', 'year',
@@ -51,7 +51,8 @@ def to_json(subject):
     for item in useless:
         data.pop(item)
 
-    print(data)
+    if debug is True:
+        print(data)
 
     json_data = json.dumps(data, ensure_ascii=False)
     with open('ntnu.json', 'a') as f:
@@ -65,8 +66,8 @@ def correct_json():
         f.write('[' + raw[:-1] + ']')
 
 
-def open_excel():
-    excel = open_workbook('export.xls')
+def connect(year, debug=False):
+    excel = open_workbook('{}.xls'.format(year))
     table = excel.sheets()[0]
 
     nrows = table.nrows
@@ -76,8 +77,8 @@ def open_excel():
         for col in colnames:
             subject.append(col)
 
-        to_json(subject)
+        to_json(subject, debug)
 
 if __name__ == '__main__':
-    open_excel()
+    connect('1022', debug=True)
     correct_json()

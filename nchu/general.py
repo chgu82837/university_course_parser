@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def to_json(subjects):
+def to_json(subjects, debug=False):
     items = ['obligatory', 'code', 'title', 'trash1', 'year', 'credits',
              'hours', 'trash2', 'time', 'trash3', 'location', 'trash4',
              'professor', 'trash5', 'department', 'number', 'number_selected',
@@ -32,7 +32,8 @@ def to_json(subjects):
         for item in useless:
             data.pop(item)
 
-        print(data)
+        if debug is True:
+            print(data)
 
         json_data = json.dumps(data, ensure_ascii=False)
         with open('nchu.json', 'a') as f:
@@ -46,7 +47,7 @@ def correct_json():
         f.write('[' + raw[:-1] + ']')
 
 
-def connect():
+def connect(debug=False):
     url = 'https://onepiece.nchu.edu.tw/cofsys/plsql/crseqry_gene'
     html = requests.get(url)
     soup = BeautifulSoup(html.text)
@@ -61,7 +62,10 @@ def connect():
         soup = BeautifulSoup(response.text)
         td = soup.findAll('td')[105:-2]
 
-        print(ID, len(td) // 20)
+        if debug is True:
+            # Print the length of courses
+            print(ID, len(td) // 20)
+
         subjects = []
         for i in range(len(td) // 21):
             if i == len(td) // 21:
@@ -74,5 +78,5 @@ def connect():
         to_json(subjects)
 
 if __name__ == '__main__':
-    connect()
+    connect(debug=True)
     correct_json()

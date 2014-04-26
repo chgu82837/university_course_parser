@@ -30,7 +30,7 @@ def normalize(raw_time):
     return result
 
 
-def to_json(subjects):
+def to_json(subjects, debug=False):
     items = ['department', 'dept_code', 'serial', 'code', 'class_code',
              'class', 'grade', 'field', 'team', 'language', 'title',
              'obligatory', 'credits', 'professor', 'number_selected',
@@ -55,7 +55,8 @@ def to_json(subjects):
         for item in useless:
             data.pop(item)
 
-        print(data)
+        if debug is True:
+            print(data)
 
         json_data = json.dumps(data, ensure_ascii=False)
         with open('ncku.json', 'a') as f:
@@ -69,7 +70,7 @@ def correct_json():
         f.write('[' + raw[:-1] + ']')
 
 
-def connect():
+def connect(year, debug=False):
     depts = ['A2', 'A3', 'A4', 'A5', 'A6', 'AA', 'AH', 'AN', 'C0', 'XZ', 'A1',
              'A7', 'A8', 'A9', 'AG', 'B1', 'K1', 'B2', 'K2', 'B3', 'K3', 'B5',
              'K5', 'K4', 'C1', 'L1', 'C2', 'L2', 'C3', 'L3', 'C4', 'L4', 'F8',
@@ -94,7 +95,9 @@ def connect():
         soup = BeautifulSoup(html.text)
         td = soup.find_all('td')
 
-        print(dept, len(td))
+        if debug is True:
+            # Print the length of courses
+            print(dept, len(td))
         subjects = []
         for i in range(len(td) // 23 - 1):
             if i == len(td) // 23 - 1:
@@ -104,8 +107,8 @@ def connect():
                 p = 23 * i
                 subjects.append(td[p:p + 23])
 
-        to_json(subjects)
+        to_json(subjects, debug)
 
 if __name__ == '__main__':
-    connect()
+    connect('1022', debug=True)
     correct_json()
