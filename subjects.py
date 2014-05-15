@@ -5,5 +5,6 @@ u = ['nchu', 'ncku', 'ntnu']
 
 for name in u:
     print(name.upper() + '...')
-    exec(name + '.parser.connect(' + YEAR + ')')
-    exec(name + '.parser.correct_json()')
+    exec(name + '.parser.parse(' + YEAR + ')')
+
+print('Done')

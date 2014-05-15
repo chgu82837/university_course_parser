@@ -2,7 +2,7 @@ import json
 from xlrd import open_workbook
 
 
-def normalize(raw_time):
+def _normalize(raw_time):
     if raw_time == '':
         return ''
 
@@ -29,7 +29,7 @@ def normalize(raw_time):
     return result
 
 
-def to_json(subject, debug=False):
+def _to_json(subject, debug=False):
     items = ['serial', 'code', 'department', 'team', 'grade',
              'class', 'language', 'moocs', 'sex', 'title',
              'eng_title', 'credits', 'obligatory', 'year',
@@ -43,7 +43,7 @@ def to_json(subject, debug=False):
     # Normalize particular data
     data['obligatory'] = '必修' if data['obligatory'] == '必' else '選修'
     data['code'] = '{0}-{1}'.format(data['code'], data['serial'])
-    data['time'] = normalize(data['location'])
+    data['time'] = _normalize(data['location'])
 
     # Remove useless data
     useless = ['team', 'moocs', 'sex', 'eng_title',
@@ -55,19 +55,19 @@ def to_json(subject, debug=False):
         print(data)
 
     json_data = json.dumps(data, ensure_ascii=False)
-    with open('ntnu.json', 'a') as f:
-        f.write('{0},'.format(json_data))
+    with open('ntnu.json', 'a') as json_file:
+        json_file.write('{0},'.format(json_data))
 
 
-def correct_json():
-    with open('ntnu.json', 'r') as f:
-        raw = f.readline()
-    with open('ntnu.json', 'w') as f:
-        f.write('[' + raw[:-1] + ']')
+def _correct_json():
+    with open('ntnu.json', 'r') as json_file:
+        raw = json_file.readline()
+    with open('ntnu.json', 'w') as json_file:
+        json_file.write('[' + raw[:-1] + ']')
 
 
-def connect(year, debug=False):
-    excel = open_workbook('{}.xls'.format(year))
+def _open_excel(year, debug=False):
+    excel = open_workbook('{0}.xls'.format(year))
     table = excel.sheets()[0]
 
     nrows = table.nrows
@@ -77,8 +77,12 @@ def connect(year, debug=False):
         for col in colnames:
             subject.append(col)
 
-        to_json(subject, debug)
+        _to_json(subject, debug)
+
+
+def parse(year, debug=False):
+    _open_excel(year, debug)
+    _correct_json()
 
 if __name__ == '__main__':
-    connect('1022', debug=True)
-    correct_json()
+    parse(1022, debug=True)

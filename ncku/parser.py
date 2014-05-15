@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def normalize(raw_time):
+def _normalize(raw_time):
     times = raw_time.split('[')[1:]
     for i in range(len(times)):
         times[i] = times[i].replace(']', '')
@@ -30,7 +30,7 @@ def normalize(raw_time):
     return result
 
 
-def to_json(subjects, debug=False):
+def _to_json(subjects, debug=False):
     items = ['department', 'dept_code', 'serial', 'code', 'class_code',
              'class', 'grade', 'field', 'team', 'language', 'title',
              'obligatory', 'credits', 'professor', 'number_selected',
@@ -46,7 +46,7 @@ def to_json(subjects, debug=False):
         # Normalize particular data
         data['code'] = '{0}-{1} {2}'.format(data['dept_code'],
                                             data['serial'], data['code'])
-        data['time'] = normalize(data['time'])
+        data['time'] = _normalize(data['time'])
 
         # Remove useless data
         useless = ['dept_code', 'serial', 'class_code',
@@ -63,14 +63,14 @@ def to_json(subjects, debug=False):
             f.write('{0},'.format(json_data))
 
 
-def correct_json():
+def _correct_json():
     with open('ncku.json', 'r') as f:
         raw = f.readline()
     with open('ncku.json', 'w') as f:
         f.write('[' + raw[:-1] + ']')
 
 
-def connect(year, debug=False):
+def _connect(debug=False):
     depts = ['A2', 'A3', 'A4', 'A5', 'A6', 'AA', 'AH', 'AN', 'C0', 'XZ', 'A1',
              'A7', 'A8', 'A9', 'AG', 'B1', 'K1', 'B2', 'K2', 'B3', 'K3', 'B5',
              'K5', 'K4', 'C1', 'L1', 'C2', 'L2', 'C3', 'L3', 'C4', 'L4', 'F8',
@@ -107,8 +107,12 @@ def connect(year, debug=False):
                 p = 23 * i
                 subjects.append(td[p:p + 23])
 
-        to_json(subjects, debug)
+        _to_json(subjects, debug)
+
+
+def parse(year, debug=False):
+    _connect(debug)
+    _correct_json()
 
 if __name__ == '__main__':
-    connect('1022', debug=True)
-    correct_json()
+    parse(1022, debug=True)
