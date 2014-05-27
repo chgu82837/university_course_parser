@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-class department():
+class Department():
     def __init__(self):
         self.items = ['obligatory', 'code', 'title', 'previous', 'year', 'credits',
                       'hours', 'prac_hours', 'time', 'prac_time', 'location',
@@ -15,9 +15,9 @@ class department():
                         'prac_professor', 'prac_location',
                         'number', 'number_outer_dept', 'number_available']
 
-    def _to_json(self, subjects):
-        data = {}
+    def filter(self, subjects):
         for sub in subjects:
+            data = {}
             for i in range(len(sub)):
                 data[self.items[i]] = sub[i].text.strip()
 
@@ -25,7 +25,6 @@ class department():
             if data['obligatory'] == '必選別':
                 data = {}
                 continue
-            print(data['obligatory'])
             data['time'] += data['prac_time']
             data['professor'] += data['prac_professor']
             data['location'] += data['prac_location']
@@ -35,19 +34,20 @@ class department():
             for item in self.useless:
                 data.pop(item)
 
-            json_data = json.dumps(data, ensure_ascii=False)
-            with open('nchu.json', 'a') as json_file:
-                json_file.write('{},'.format(json_data))
+            self.__to_json(data)
 
-            data = {}
+    def __to_json(self, data):
+        json_data = json.dumps(data, ensure_ascii=False)
+        with open('nchu.json', 'a') as json_file:
+            json_file.write('{},'.format(json_data))
 
-    def _correct_json(self):
+    def __correct_json(self):
         with open('nchu.json', 'r') as json_file:
             raw = json_file.readline()
         with open('nchu.json', 'w') as json_file:
             json_file.write('[' + raw[:-1] + ']')
 
-    def _connect(self):
+    def __connect(self):
         url = 'https://onepiece.nchu.edu.tw/cofsys/plsql/crseqry_home'
         html = requests.get(url)
         soup = BeautifulSoup(html.text)
@@ -71,14 +71,14 @@ class department():
                     p = 20 * i
                     subjects.append(td[p + 1:p + 21])
 
-            self._to_json(subjects)
+            self.filter(subjects)
 
     def parse(self):
-        self._connect()
-        self._correct_json()
+        self.__connect()
+        self.__correct_json()
 
 
-class general():
+class General():
     def __init__(self):
         self.items = ['obligatory', 'code', 'title', 'trash1', 'year', 'credits',
                       'hours', 'trash2', 'time', 'trash3', 'location', 'trash4',
@@ -89,9 +89,9 @@ class general():
                         'trash1', 'trash2', 'trash3', 'trash4',
                         'trash5', 'trash6']
 
-    def _to_json(self, subjects):
-        data = {}
+    def filter(self, subjects):
         for sub in subjects:
+            data = {}
             for i in range(len(sub)):
                 if sub[i].text.strip() == '必選別':
                     break
@@ -104,9 +104,12 @@ class general():
             for item in self.useless:
                 data.pop(item)
 
-            json_data = json.dumps(data, ensure_ascii=False)
-            with open('nchu.json', 'a') as f:
-                f.write('{},'.format(json_data))
+            self.__to_json(data)
+
+    def __to_json(self, data):
+        json_data = json.dumps(data, ensure_ascii=False)
+        with open('nchu.json', 'a') as f:
+            f.write('{},'.format(json_data))
 
     def _correct_json(self):
         with open('nchu.json', 'r') as f:
@@ -138,18 +141,18 @@ class general():
                     p = 21 * i
                     subjects.append(td[p + 1:p + 22])
 
-            self._to_json(subjects)
+            self.filter(subjects)
 
     def parse(self):
         self._connect()
         self._correct_json()
 
 
-def parse(year):
-    d = department()
-    d.parse()
-    g = general()
-    g.parse()
+class Parser():
+    def __init__(self):
+        self.department = Department()
+        self.general = General()
 
-if __name__ == '__main__':
-    parse(1022)
+    def parse(self, year):
+        self.department.parse()
+        self.general.parse()
