@@ -110,4 +110,4 @@ class Parser():
 
     def parse(self, year):
         self.__connect()
-        self.__correct_json()
+        self.___correct_json()
