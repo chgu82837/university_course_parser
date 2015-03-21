@@ -103,7 +103,7 @@ def end_json_arr(json_path):
         json_file.write('],')
 
 def start_json(json_path):
-    with open(sys.argv[1], 'w') as json_file:
+    with open(json_path, 'w') as json_file:
         json_file.truncate()
         json_file.write('{')
 
@@ -112,17 +112,19 @@ def end_json(json_path):
         json_file.write('}')
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage:\n\tpython[3] "+sys.argv[0]+" <json_output> dept_id1 [dept_id2 [dept_id3 ...]]")
+    if len(sys.argv) < 3:
+        print("Usage:\n\tpython[3] "+sys.argv[0]+" <url> <json_output> dept_id1 [dept_id2 [dept_id3 ...]]")
+        print("\n\n\t URL can be:https://onepiece.nchu.edu.tw/cofsys/plsql/crseqry_home");
+        print("\t URL can be:https://onepiece.nchu.edu.tw/cofsys/plsql/crseqry_gene");
         sys.exit(1)
 
-    jpath = sys.argv[1]
-    url = 'https://onepiece.nchu.edu.tw/cofsys/plsql/crseqry_home'
-    
+    jpath = sys.argv[2]
+    url = sys.argv[1]
+    url = "https://onepiece.nchu.edu.tw/cofsys/plsql/crseqry_home"
+
     err = []
 
-    # dept_id = ["U56","U53B","U53A"] for WP_final_proj
-    dept_id = sys.argv[2:]
+    dept_id = sys.argv[3:]
     print(dept_id)
     my_prbar = pyprind.ProgBar(len(dept_id),title = "共 %d 個系要處理" % len(dept_id))
     try:
@@ -150,4 +152,3 @@ if __name__ == "__main__":
 
     print("================ WARN ================")
     print(err)
-
