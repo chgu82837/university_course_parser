@@ -1,72 +1,75 @@
-import json,re,sys,pyprind,requests
+# coding=utf-8
+
+import json,re,sys,pyprind,requests,urllib,traceback
+from pyquery import PyQuery as pq
 
 head_start_value = ["必選別"]
-
 row_start_value = ["必修","選修"]
-
-def get_nchu_course(url,payload):
-    response = requests.post(url, data=payload)
-    content = re.sub(r'<a[^>]*>([^<]+)</a>', r'\1', response.text).replace("</BR>"," ")
-    match = re.findall(r'<TD[^>]*>([^<]+)</TD>',content)
-
-    data = []
-    state = 0 # 0 for none, 1 for in head, 2 for in row
-    for cell in match:
-        value = cell.strip()
-        # print("> " + value)
-        if value in head_start_value:
-            state = 1
-            col_name = []
-        elif value in row_start_value:
-            state = 2
-            colcnt = 0
-            r_data = {}
-
-        if state is 1:
-            col_name.append(value)
-        elif state is 2:
-            if(len(value)):
-                r_data[col_name[colcnt]] = value
-            colcnt += 1
-            if colcnt is len(col_name):
-                data.append(r_data)
-                state = 0
-
-    return data
-
-def parse_time(t_str):
-    # print(t_str)
-    return [{"day":int(d[0]),"time":[int(h,16) for h in list(d[1:]) if h in "123456789ABCD" ]} for d in t_str.split(",") if d[0] in "1234567"]
-
 col_name2key = {
-    "必選別":'obligatory',
-    "選課號碼":"code",
-    "科目名稱":"title",
+    "※上課時間":"time",
+    "上課教室":"location",
+    "上課教師":"professor",
+    "上課時數":"hours",
+    "備註":"note",
     "先修科目":"previous",
     "全/半年":"year",
     "學分數":"credits",
-    "上課時數":"hours",
-    "實習時數":"hours",
-    "※上課時間":"time",
-    "實習時間":"time",
-    "上課教室":"location",
     "實習教室":"location",
-    "上課教師":"professor",
     "實習教師":"professor",
-    "開課單位":"department",
-    "開課人數":"number",
+    "實習時數":"hours",
+    "實習時間":"time",
+    "必選別":'obligatory',
+    "科目名稱":"title",
     "語言":"language",
-    "備註":"note",
+    "選課號碼":"code",
+    "開課人數":"number",
+    "開課單位":"department",
+    "for_dept":"for_dept",
+    "class":"class",
 }
-
 obligatory2tf = {
     "必修":True,
     "選修":False
 }
-
-required_key = ["obligatory","code","title","time","department","location","credits","professor"]
-
+required_key = {"obligatory","code","title","time","department","credits","professor"}
 int_field = ["number","hours","credits"]
+
+def get_nchu_course(url, payload):
+    response = requests.post(url, data=payload)
+    datas = []
+    for table in re.findall(r'<TABLE.*?</TABLE>', response.text, re.S):
+        data = {}
+        table = table.replace("</BR>","`").replace("\u3000",'')
+        with open('debug.html', 'w') as fdebug:
+            fdebug.write(table)
+        d = pq('<div>'+table+'</div>')
+        table_title = d('strong:contains("系所名稱")').text()
+        if table_title == '':
+            continue
+        match = re.fullmatch(r'系所名稱:(.*?) 年級:(.*?) 班別:(.*?)', table_title)
+        data['for_dept'], data['class'] = match.group(1), match.group(2)+match.group(3)
+        thead = []
+        for tr in d('tr'):
+            row = [ str(pq(i).text().strip()) for i in pq(tr).find('td') ]
+            if len(thead) == 0:
+                thead = row
+            else:
+                row = dict(zip(thead, row))
+                row.update(data)
+                datas.append(row)
+    return datas
+
+def parse_time(t_str):
+    # print(t_str)
+    return [{"day":int(d[0]),"time":[int(h,16) for h in list(d[1:]) if h in "123456789ABCD" ]} for d in t_str.split(",") if (len(d) and d[0] in "1234567")]
+
+def parse_title(t_str):
+    title_splited = [i.strip() for i in t_str.split('`')]
+    if len(title_splited) == 1:
+        return {'zh_TW': title_splited[0]}
+    else:
+        return {'zh_TW': title_splited[0], 'en_US': title_splited[1]}
+    raise Exception('parse_title error: '+t_str)
 
 def parse(data):
     r_data = {}
@@ -74,33 +77,36 @@ def parse(data):
     for k in data.keys():
         if k in col_name2key:
             col_key = col_name2key[k]
-            r_data[col_key] = data[k]
-            if(col_key == "obligatory"):
-                r_data["obligatory_tf"] = obligatory2tf[data[k]]
-            elif(col_key == "time"):
-                r_data["time_parsed"] = parse_time(data[k])
+            if col_key not in r_data or len(data[k]) > len(r_data[col_key]):
+                r_data[col_key] = data[k]
+            if col_key == "obligatory":
+                r_data["obligatory_tf"] = obligatory2tf[r_data[col_key]]
+            elif col_key == "time":
+                r_data["time_parsed"] = parse_time(r_data[col_key])
+            elif col_key == "title":
+                r_data['title_parsed'] = parse_title(r_data[col_key])
             elif col_key in int_field:
-                r_data[col_key + "_parsed"] = int(data[k])
-            if col_key in required_key:
-                required_key_cnt += 1
-    if(required_key_cnt is not len(required_key)):
-        raise Exception("required_key not satisfied!")
+                r_data[col_key + "_parsed"] = int(r_data[col_key]) if len(r_data[col_key]) else 0
+    for k in required_key:
+        if len(r_data.get(k, '')) == 0:
+            raise Exception(k+' is required in '+str(r_data))
     return r_data
 
-def to_json(json_path,arr):
+def to_json(json_path,arr,notFirst = False):
     # print(arr)
     with open(json_path, 'a') as json_file:
         for d in arr:
             json_str = json.dumps(d, ensure_ascii=False)
-            json_file.write('{},'.format(json_str))
+            json_file.write('{}{}'.format((',' if notFirst else ''), json_str))
+            notFirst = True
 
-def start_json_arr(json_path,name):
+def start_json_arr(json_path,name,notFirst = False):
     with open(json_path, 'a') as json_file:
-        json_file.write('"%s":[' % name)
+        json_file.write('%s"%s":[' % ((',' if notFirst else ''), name))
 
 def end_json_arr(json_path):
     with open(json_path, 'a') as json_file:
-        json_file.write('],')
+        json_file.write(']')
 
 def start_json(json_path):
     with open(json_path, 'w') as json_file:
@@ -127,9 +133,12 @@ if __name__ == "__main__":
     dept_id = sys.argv[3:]
     print(dept_id)
     my_prbar = pyprind.ProgBar(len(dept_id),title = "共 %d 個系要處理" % len(dept_id))
+    notFirst1 = False
     try:
         start_json(jpath)
-        start_json_arr(jpath,"course")
+        start_json_arr(jpath,"course",notFirst1)
+        notFirst1 = True
+        notFirst2 = False
 
         for ID in dept_id:
             raw = get_nchu_course(url,{'v_dept': ID})
@@ -139,9 +148,10 @@ if __name__ == "__main__":
                 try:
                     data.append(parse(r))
                 except Exception as e:
-                    err.append([r,e])
+                    err.append([r,str(e)+str(traceback.format_exc())])
             # print(data)
-            to_json(jpath,data)
+            to_json(jpath,data,notFirst2)
+            notFirst2 = True
             my_prbar.update(1,item_id = ID)
 
         end_json_arr(jpath)
@@ -149,6 +159,7 @@ if __name__ == "__main__":
     except Exception as e:
         print("================ ERR ================")
         print(e)
+        print(traceback.format_exc())
 
     print("================ WARN ================")
     print(err)
