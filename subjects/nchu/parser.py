@@ -40,8 +40,8 @@ def get_nchu_course(url, payload):
     for table in re.findall(r'<TABLE.*?</TABLE>', response.text, re.S):
         data = {}
         table = table.replace("</BR>","`").replace("\u3000",'')
-        with open('debug.html', 'w') as fdebug:
-            fdebug.write(table)
+        # with open('debug.html', 'w') as fdebug:
+        #     fdebug.write(table)
         d = pq('<div>'+table+'</div>')
         table_title = d('strong:contains("系所名稱")').text()
         if table_title == '':
